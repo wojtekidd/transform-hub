@@ -47,7 +47,7 @@ cd transform-hub/                                           # enter the cloned d
 yarn install                                                # install dependencies
 yarn build:all                                              # build all packages
                                                             #    -> modules, samples and docker images
-yarn install -g dist/cli/                                   # install the cli
+yarn global add file:$(pwd)/dist/cli                        # install the cli
 yarn packseq
 yarn start                                                  # start the hub
 ```
