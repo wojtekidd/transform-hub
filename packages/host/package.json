@@ -21,7 +21,6 @@
   "dependencies": {
     "@scramjet/adapters": "^0.11.0-0",
     "@scramjet/api-server": "^0.11.0-0",
-    "@scramjet/http-tunnel": "^0.11.0-0",
     "@scramjet/load-check": "^0.11.0-0",
     "@scramjet/logger": "^0.11.0-0",
     "@scramjet/model": "^0.11.0-0",
