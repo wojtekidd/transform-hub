@@ -122,6 +122,8 @@ export function createStreamHandlers(router: SequentialCeroRouter) {
                     res.writeHead(status, { "Content-type": "application/json" });
                     res.end(JSON.stringify(data));
 
+                    console.log("downstream response end");
+
                     return;
                 }
 
