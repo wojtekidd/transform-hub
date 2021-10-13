@@ -43,7 +43,7 @@ export class CPMConnector extends EventEmitter {
         super();
         this.cpmURL = cpmUrl;
 
-        this.infoFilePath = "/tmp/sth-id.json";
+        this.infoFilePath = "/srv/runner/scramjet/sth-id.json";
     }
 
     getId(): string | undefined {

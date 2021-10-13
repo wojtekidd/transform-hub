@@ -53,7 +53,7 @@ const waitForText = (stream: Stream, text: string) => new Promise<void>((res, _r
     //
     //
     const startHost1 = async (config: { cpm: boolean }) => {
-        fs.writeFileSync("/tmp/sth-id.json", JSON.stringify({ id: host1 }));
+        fs.writeFileSync("/srv/runner/scramjet/sth-id.json", JSON.stringify({ id: host1 }));
         let args = [resolve(__dirname, "../../packages/sth/src/bin/hub.ts"), "-S", "/tmp/s1", "-P", "8001"];
 
         if (config.cpm) {
