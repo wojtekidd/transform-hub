@@ -143,8 +143,7 @@ export class CPMConnector extends EventEmitter {
                         this.emit("connect");
                         this.setLoadCheckMessageSender();
                     } else if (mSocket._chan === 1) {
-                        const logStream = StringStream.from(mSocket)
-                            .catch((err: Error) => this.logger.error(err.message));
+                        const logStream = mSocket.on("error", (err: Error) => this.logger.error(err.message));
 
                         this.emit("log_connect", logStream);
                     } else {
@@ -248,11 +247,11 @@ export class CPMConnector extends EventEmitter {
     async sendSequencesInfo(sequences: ISequence[]): Promise<void> {
         this.logger.log("Sending sequences information, total sequences:", sequences.length);
 
-        await this.communicationStream?.whenWrote(
+        await this.communicationStream!.whenWrote(
             JSON.stringify([CPMMessageCode.SEQUENCES, { sequences }]) + "\n"
         );
 
-        sequences.forEach(seq => this.sendSequenceInfo(seq, SequenceMessageCode.SEQUENCE_CREATED));
+        this.logger.log("Sequences information sent.");
     }
 
     async sendInstancesInfo(instances: {
@@ -260,11 +259,13 @@ export class CPMConnector extends EventEmitter {
         sequence: string;
         status: FunctionDefinition[] | undefined;
     }[]): Promise<void> {
-        this.logger.log("sendInstancesInfo");
+        this.logger.log("Sending instances information...");
 
         await this.communicationStream?.whenWrote(
             JSON.stringify([CPMMessageCode.INSTANCES, { instances }]) + "\n"
         );
+
+        this.logger.log("Instances information sent.");
     }
 
     async sendSequenceInfo(sequence: Partial<ISequence>, seqStatus: SequenceMessageCode): Promise<void> {
