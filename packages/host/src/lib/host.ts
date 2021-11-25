@@ -1,6 +1,6 @@
 import * as findPackage from "find-package-json";
 
-import { APIExpose, AppConfig, CSIConfig, IComponent, ISequenceAdapter, ISequenceInfo, Logger, NextCallback, ParsedMessage, STHConfiguration, STHRestAPI } from "@scramjet/types";
+import { APIExpose, AppConfig, CSIConfig, IComponent, ISequenceAdapter, Logger, NextCallback, ParsedMessage, STHConfiguration, STHRestAPI } from "@scramjet/types";
 import { CommunicationHandler, HostError, IDProvider } from "@scramjet/model";
 import { Duplex, Readable, Writable } from "stream";
 import { IncomingMessage, ServerResponse } from "http";
@@ -23,14 +23,6 @@ import { LoadCheck } from "@scramjet/load-check";
 
 const version = findPackage(__dirname).next().value?.version || "unknown";
 const exists = (dir: string) => access(dir, constants.F_OK).then(() => true, () => false);
-
-function createSequenceDTO(sequence: ISequenceInfo): STHRestAPI.SequenceDTO {
-    return {
-        instances: sequence.instances,
-        id: sequence.getId(),
-        config: sequence.getConfig()
-    };
-}
 
 export type HostOptions = Partial<{
     identifyExisting: boolean
@@ -264,7 +256,7 @@ export class Host implements IComponent {
 
             for (const sequence of sequences) {
                 this.sequencesStore.add(sequence);
-                this.logger.log("Sequence found", sequence.info.getConfig());
+                this.logger.log("Sequence found", sequence.info.config);
             }
         } catch (e: any) {
             this.logger.warn("Error while trying to identify existing sequences.", e);
@@ -284,12 +276,12 @@ export class Host implements IComponent {
 
             this.sequencesStore.add(sequence);
 
-            this.logger.info("Sequence identified:", sequence.info.getConfig());
+            this.logger.info("Sequence identified:", sequence.info.config);
 
-            await this.cpmConnector?.sendSequenceInfo(sequence.info.getId(), SequenceMessageCode.SEQUENCE_CREATED);
+            await this.cpmConnector?.sendSequenceInfo(sequence.info.id, SequenceMessageCode.SEQUENCE_CREATED);
 
             return {
-                id: sequence.info.getId()
+                id: sequence.info.id
             };
         } catch (error: any) {
             this.logger.debug(error?.stack);
@@ -314,7 +306,7 @@ export class Host implements IComponent {
         const sequence = this.sequencesStore.getById(seqId);
 
         if (sequence) {
-            this.logger.info("Starting sequence", sequence.info.getId());
+            this.logger.info("Starting sequence", sequence.info.id);
 
             const csic = await this.startCSIController(sequence, payload.appConfig as AppConfig, payload.args);
 
@@ -377,7 +369,7 @@ export class Host implements IComponent {
 
         this.attachInstanceToCommonLogsPipe(csic);
 
-        sequence.info.addInstance(id);
+        sequence.info.instances.add(id);
 
         csic.on("pang", (data) => {
             this.logger.log("PANG message received:", data);
@@ -424,11 +416,11 @@ export class Host implements IComponent {
 
             delete InstanceStore[csic.id];
 
-            sequence.info.removeInstance(id);
+            sequence.info.instances.delete(id);
 
             this.cpmConnector?.sendInstanceInfo({
                 id: csic.id,
-                sequence: sequence.info.getId()
+                sequence: sequence.info.id
             }, InstanceMessageCode.INSTANCE_ENDED);
 
             if (csic.provides && csic.provides !== "") {
@@ -450,7 +442,7 @@ export class Host implements IComponent {
 
         return Object.values(this.instancesStore).map(csiController => ({
             id: csiController.id,
-            sequence: csiController.sequence.getId(),
+            sequence: csiController.sequence.id,
         }));
     }
 
@@ -465,16 +457,30 @@ export class Host implements IComponent {
             return undefined;
         }
 
-        return createSequenceDTO(sequence.info);
+        return {
+            id: sequence.info.id,
+            config: sequence.info.config,
+            instances: Array.from(sequence.info.instances.values())
+        };
     }
 
     getSequences(): STHRestAPI.GetSequencesResponse {
         return this.sequencesStore.getSequences()
-            .map(sequence => createSequenceDTO(sequence.info));
+            .map(sequence => ({
+                id: sequence.info.id,
+                config: sequence.info.config,
+                instances: Array.from(sequence.info.instances.values())
+            }));
     }
 
     getSequenceInstances(sequenceId: string): STHRestAPI.GetSequenceInstancesResponse {
         // @TODO this should probably return error response when there's not corresponding Sequence
-        return this.sequencesStore.getById(sequenceId)?.info.instances;
+        const sequence = this.sequencesStore.getById(sequenceId);
+
+        if (!sequence) {
+            return undefined;
+        }
+
+        return Array.from(sequence.info.instances.values());
     }
 }
